@@ -13,10 +13,9 @@ try:
 except Exception as e:
     raise RuntimeError(f"Failed to load model from {MODEL_PATH}: {e}")
 
-# Define your class labels in the order your model was trained on
-# For example, if your training dataset folder structure was something like:
-# 0: alba, 1: c5, 2: h1, 3: m4
-class_names = ["alba", "c5", "h1", "m4"]
+# Updated class labels to match the model's output of 8 classes.
+# Replace these with the actual class names in the correct order as used in training.
+class_names = ["alba", "c5", "h1", "m4", "class5", "class6", "class7", "class8"]
 
 def test_single_image(image_path: str, model):
     """
@@ -26,7 +25,7 @@ def test_single_image(image_path: str, model):
     try:
         # Open and resize the image (adjust size as per your model input)
         image = Image.open(image_path).convert("RGB")
-        image = image.resize((224, 224))  # Change dimensions if required
+        image = image.resize((299, 299))  # Updated dimensions to match model input
 
         # Convert image to numpy array and normalize
         image_array = np.array(image) / 255.0
@@ -37,8 +36,24 @@ def test_single_image(image_path: str, model):
 
         # Make prediction
         predictions = model.predict(image_array)
-        predicted_index = np.argmax(predictions, axis=1)[0]
-        confidence = np.max(predictions)
+        print("Predictions:", predictions)
+        print("Predictions shape:", predictions.shape)
+
+        # Handle prediction output shape
+        if predictions.ndim == 1:
+            predicted_index = np.argmax(predictions)
+            confidence = np.max(predictions)
+        elif predictions.ndim == 2:
+            if predictions.shape[0] < 1:
+                raise ValueError("No predictions returned from the model.")
+            predicted_index = np.argmax(predictions, axis=1)[0]
+            confidence = np.max(predictions)
+        else:
+            raise ValueError(f"Unexpected prediction shape: {predictions.shape}")
+
+        # Validate predicted index against class_names length
+        if predicted_index >= len(class_names):
+            raise IndexError("Predicted index is out of range of the class names list.")
 
         # Map numeric label to class name
         predicted_class = class_names[predicted_index]

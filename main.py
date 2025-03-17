@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from database import engine, Base
 from routers import user_router, prediction_router
+from routers import age_detection_router
 
 app = FastAPI()
 
@@ -10,6 +11,7 @@ Base.metadata.create_all(bind=engine)
 # Include routers
 app.include_router(user_router.router, prefix="/users", tags=["users"])
 app.include_router(prediction_router.router, prefix="/prediction", tags=["prediction"])
+app.include_router(age_detection_router.router, prefix="/age-detection", tags=["age-detection"])
 
 if __name__ == "__main__":
     import uvicorn
