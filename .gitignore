@@ -27,13 +27,11 @@ var/
 venv/
 env/
 ENV/
+.venv/
 .virtualenv/
 *.env
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
 *.spec
 
 # Installer logs
@@ -57,29 +55,33 @@ coverage.xml
 *.mo
 *.pot
 
-# Django stuff:
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Django/Flask stuff:
 *.log
 local_settings.py
-
-# Flask stuff:
 instance/
 .webassets-cache
 
-# PyCharm
-.idea/
-
 # VS Code
 .vscode/
+
+# PyCharm
+.idea/
 
 # mypy
 .mypy_cache/
 .dmypy.json
 dmypy.json
 
-# SQLAlchemy
-*.db
-*.sqlite3
-
 # OS-specific files
 .DS_Store
 Thumbs.db
+
+# Temporary files for uploaded images
+temp/
+
+# Ignore TensorFlow/Keras model files
+*.h5
+*.pb
