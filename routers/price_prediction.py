@@ -1,3 +1,4 @@
+import os
 import joblib
 import pandas as pd
 from fastapi import APIRouter, HTTPException
@@ -5,89 +6,61 @@ from pydantic import BaseModel
 
 router = APIRouter()
 
-# -------------------------------------------------------------------------
-# 1. Load your saved models and encoder once at application startup
-# -------------------------------------------------------------------------
+# Get the absolute path of the model directory
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Gets the backend directory
+MODEL_DIR = os.path.join(BASE_DIR, "model")  # Model directory path
+
+# Load models and encoder with updated absolute paths
 try:
-    saved_classifier = joblib.load("cinnamon_price_classifier.pkl")
-    saved_regressor = joblib.load("cinnamon_price_regressor.pkl")
-    saved_encoder = joblib.load("grade_encoder.pkl")
+    saved_classifier = joblib.load(os.path.join(MODEL_DIR, "cinnamon_price_classifier.pkl"))
+    saved_regressor = joblib.load(os.path.join(MODEL_DIR, "cinnamon_price_regressor.pkl"))
+    saved_encoder = joblib.load(os.path.join(MODEL_DIR, "grade_encoder.pkl"))
+
+    # 🔹 Retrieve the correct column names from the encoder
+    encoder_feature_names = saved_encoder.get_feature_names_out()
+    
+    # 🔹 Ensure X_columns matches the trained model (use uppercase feature names)
+    X_columns = ["Year", "Month"] + encoder_feature_names.tolist()
+
 except Exception as e:
-    raise RuntimeError(f"Error loading models/encoder: {e}")
+    raise RuntimeError(f"Error loading models/encoder from {MODEL_DIR}: {e}")
 
-# -------------------------------------------------------------------------
-# 2. Feature columns used during training
-#    Adjust this list to match your training DataFrame exactly.
-# -------------------------------------------------------------------------
-X_columns = ["year", "month", "grade_enc"]
-
-# -------------------------------------------------------------------------
-# 3. Define a Pydantic model for the request body
-# -------------------------------------------------------------------------
+# Define the request model
 class PricePredictionRequest(BaseModel):
     year: int
     month: int
     grade: str
 
-# -------------------------------------------------------------------------
-# 4. Helper function to predict price category and price
-# -------------------------------------------------------------------------
+# Prediction function
 def predict_price_and_category(year: int, month: int, grade: str):
-    """
-    Given a year, month, and grade:
-      - Encodes the 'grade' using the saved encoder
-      - Creates a DataFrame matching the training schema
-      - Predicts the price category (classifier) and price (regressor)
-      - Returns (predicted_category, predicted_price)
-    """
     try:
-        # Transform 'grade' using the saved encoder
-        grade_vector = saved_encoder.transform([[grade]]).flatten()  
-        
-        # Build the input data array
-        input_data = [year, month] + list(grade_vector)
-        
-        # Create a DataFrame with the same columns used during training
-        input_df = pd.DataFrame([input_data], columns=X_columns)
-        
-        # Predict price category
+        # 🔹 Ensure the input is properly encoded
+        grade_encoded = saved_encoder.transform([[grade]])  # This is already a NumPy array
+
+        # 🔹 Convert to DataFrame with correct column names
+        grade_vector = pd.DataFrame(grade_encoded, columns=encoder_feature_names)
+
+        # 🔹 Use uppercase feature names to match training data
+        input_data = pd.DataFrame([[year, month]], columns=["Year", "Month"])
+        input_df = pd.concat([input_data, grade_vector], axis=1)
+
+        # 🔹 Ensure input matches expected feature structure
+        input_df = input_df.reindex(columns=X_columns, fill_value=0)
+
+        # Predict category and price
         predicted_category = saved_classifier.predict(input_df)[0]
-        
-        # Predict actual price
         predicted_price = saved_regressor.predict(input_df)[0]
-        
+
         return predicted_category, round(predicted_price, 2)
     except Exception as e:
         raise RuntimeError(f"Prediction error: {e}")
 
-# -------------------------------------------------------------------------
-# 5. Define the POST endpoint that receives JSON and returns predictions
-# -------------------------------------------------------------------------
+# FastAPI endpoint
 @router.post("/predict-price")
 def predict_price_endpoint(request_data: PricePredictionRequest):
-    """
-    POST /predict-price
-    Request body (JSON):
-    {
-      "year": 2024,
-      "month": 1,
-      "grade": "C5"
-    }
-    
-    Returns:
-    {
-      "year": 2024,
-      "month": 1,
-      "grade": "C5",
-      "predicted_category": "High",
-      "predicted_price_LKR": 1234.56
-    }
-    """
     try:
         predicted_category, predicted_price = predict_price_and_category(
-            request_data.year, 
-            request_data.month, 
-            request_data.grade
+            request_data.year, request_data.month, request_data.grade
         )
         return {
             "year": request_data.year,
