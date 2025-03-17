@@ -6,3 +6,5 @@ pydantic
 tensorflow
 pillow
 pydantic[email]
+joblib
+pandas

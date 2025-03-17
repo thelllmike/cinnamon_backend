@@ -5,6 +5,7 @@ from routers import age_detection_router
 from fastapi.middleware.cors import CORSMiddleware
 from routers import deseases_router
 from routers import condition_detection
+from routers import price_prediction 
 
 app = FastAPI()
 
@@ -17,6 +18,7 @@ app.include_router(prediction_router.router, prefix="/prediction", tags=["predic
 app.include_router(age_detection_router.router, prefix="/age-detection", tags=["age-detection"])
 app.include_router(deseases_router.router, prefix="/disease-detection", tags=["disease-detection"])
 app.include_router(condition_detection.router, prefix="/condition_detection", tags=["condition_detection"])
+app.include_router(price_prediction.router, prefix="/price", tags=["Price Prediction"])
 
 if __name__ == "__main__":
     import uvicorn
