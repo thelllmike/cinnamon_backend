@@ -14,6 +14,7 @@ from routers import (
     deseases_router,
     condition_detection,
     price_prediction,
+    stick_sickness_desease,
 )
 
 app = FastAPI()
@@ -44,6 +45,7 @@ app.include_router(age_detection_router.router, prefix="/age-detection", tags=["
 app.include_router(deseases_router.router, prefix="/disease-detection", tags=["disease-detection"])
 app.include_router(condition_detection.router, prefix="/condition_detection", tags=["condition_detection"])
 app.include_router(price_prediction.router, prefix="/price", tags=["price-prediction"])
+app.include_router(stick_sickness_desease.router, prefix="/detection", tags=["sickness_desease"])
 
 # Run with uvicorn if this file is the entry point
 if __name__ == "__main__":
